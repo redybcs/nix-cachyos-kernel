@@ -10,9 +10,9 @@
     "hash": "sha256-FNH1Nd7PyqsCtMkgAGezMBSJQkGcqAP4l6x/PFkB0oE="
   },
   "rc": {
-    "version": "7.1-rc3",
-    "url": "https://github.com/CachyOS/linux/releases/download/cachyos-7.1-rc3-2/cachyos-7.1-rc3-2.tar.gz",
-    "hash": "sha256-Jdo6HCgh/hNWr0bpwa7qKJpYusjFzif+o/2ZpgYsUlM="
+    "version": "7.1-rc4",
+    "url": "https://github.com/CachyOS/linux/releases/download/cachyos-7.1-rc4-1/cachyos-7.1-rc4-1.tar.gz",
+    "hash": "sha256-4bKV0R/O9I6Tq0YDyXRehuIC+NAUV32OPzm4/YPm/4g="
   },
   "hardened": {
     "version": "6.19.12",
