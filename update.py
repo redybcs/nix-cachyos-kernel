@@ -34,7 +34,9 @@ def run_nix_prefetch_url(url: str) -> str:
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
     if result.returncode != 0:
-        raise RuntimeError(f"nix-prefetch-url command failed with return code: {result.returncode}")
+        raise RuntimeError(
+            f"nix-prefetch-url failed for {url} with return code {result.returncode}: {result.stderr.strip()}"
+        )
 
     output = result.stdout.strip()
     if not output:
@@ -158,6 +160,16 @@ if __name__ == "__main__":
         patches_commit = get_rev(patches_dir)
         print(f"{commit=} {patches_commit=}")
 
+        current = Path.cwd()
+        while not (current / "flake.lock").exists():
+            if current == current.parent:
+                raise RuntimeError("Could not find flake.lock in any parent directory, exiting")
+            current = current.parent
+
+        kernel_output_file = current / "kernel-cachyos" / "version.json"
+        zfs_output_file = current / "zfs-cachyos" / "version.json"
+        previous_variants = json.loads(kernel_output_file.read_text())
+        previous_zfs_versions = json.loads(zfs_output_file.read_text())
         variants = {}
         zfs_versions = {}
 
@@ -167,7 +179,15 @@ if __name__ == "__main__":
             srcname = get_srcname(pkgbuild)
             version = srcname_to_version(srcname)
             url = f"https://github.com/CachyOS/linux/releases/download/{srcname}/{srcname}.tar.gz"
-            hash = nix_sha256_to_sri(run_nix_prefetch_url(url))
+            try:
+                hash = nix_sha256_to_sri(run_nix_prefetch_url(url))
+            except RuntimeError as error:
+                if variant not in previous_variants or variant not in previous_zfs_versions:
+                    raise
+                print(f"  skipping {variant}: {error}")
+                variants[variant] = previous_variants[variant]
+                zfs_versions[variant] = previous_zfs_versions[variant]
+                continue
             print(f"  kernel: {srcname=} {version=} {hash=}")
 
             config_url = (
@@ -205,16 +225,8 @@ if __name__ == "__main__":
                 "hash": zfs_hash,
             }
 
-    current = Path.cwd()
-    while not (current / "flake.lock").exists():
-        if current == current.parent:
-            raise RuntimeError("Could not find flake.lock in any parent directory, exiting")
-        current = current.parent
-
-    kernel_output_file = current / "kernel-cachyos" / "version.json"
     with open(kernel_output_file, "w", encoding="utf-8") as f:
         json.dump(variants, f, indent=2, sort_keys=True)
 
-    zfs_output_file = current / "zfs-cachyos" / "version.json"
     with open(zfs_output_file, "w", encoding="utf-8") as f:
         json.dump(zfs_versions, f, indent=2, sort_keys=True)
