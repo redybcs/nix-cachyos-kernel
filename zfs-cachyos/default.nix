@@ -21,9 +21,7 @@ in
   enableUnsupportedExperimentalKernel = true;
   version = metadata.version;
   tests = { };
-  maintainers = with lib.maintainers; [
-    pedrohlc
-  ];
+  maintainers = with lib.maintainers; [ xddxdd ];
   hash = "";
   extraPatches = [ ];
 }).overrideAttrs
@@ -32,6 +30,12 @@ in
       inherit (metadata) url hash;
     };
     postPatch = builtins.replaceStrings [ "grep --quiet '^Linux-M" ] [ "# " ] prevAttrs.postPatch;
+    # GCC userspace needs the wrapper; modules use the configured KERNEL_CC.
+    makeFlags =
+      if builtins.elem "LLVM=1" prevAttrs.makeFlags then
+        prevAttrs.makeFlags
+      else
+        builtins.filter (flag: !(lib.hasPrefix "CC=" flag)) prevAttrs.makeFlags;
     passthru = prevAttrs.passthru // {
       cachyosVariant = variant;
     };
